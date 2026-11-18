@@ -1,6 +1,5 @@
-# Code and Data Supplement — Medical LLM Faithfulness Audit (AAAI-27)
+# Code and Data Supplement — Medical LLM Faithfulness Audit
 
-Anonymous companion archive for:
 *On Auditing Reasoning Faithfulness and Confidence Calibration in Medical LLMs*.
 
 ## Contents
