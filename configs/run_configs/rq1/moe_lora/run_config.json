@@ -1,0 +1,12 @@
+{
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "adapter": "moe",
+  "manifest": "REDACTED_ABS_PATH/rq1_training_manifest.jsonl",
+  "n_train_examples": 130943,
+  "seed": 42,
+  "lora_rank": 8,
+  "lora_alpha": 16,
+  "num_experts": 4,
+  "max_steps": 2000,
+  "load_in_4bit": true
+}

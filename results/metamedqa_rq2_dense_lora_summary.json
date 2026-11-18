@@ -1,0 +1,70 @@
+{
+  "n_items": 200,
+  "accuracy": 0.185,
+  "parse_rate": 1.0,
+  "ece": 0.315,
+  "mean_confidence": 3.0,
+  "mean_consistency": 0.6450000000000002,
+  "abstention_recall": 0.0136986301369863,
+  "unknown_item_abstention": 0.0,
+  "idk_recall": 0.0,
+  "missing_answer_recall": 0.030303030303030304,
+  "idk_recall_n": 80,
+  "missing_recall_n": 66,
+  "dmc": {
+    "score": null,
+    "d_hat": 0.2665871191475533,
+    "d_star": 0.001,
+    "n_binary_trials": 1490,
+    "fit_loss": 1000.0,
+    "note": "Unreliable DMC: LMS metacognitive fit did not converge."
+  },
+  "by_kind": {
+    "Answer modified": {
+      "n": 27,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.0
+    },
+    "Answer removed": {
+      "n": 36,
+      "accuracy": 0.05555555555555555,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.0
+    },
+    "Bad": {
+      "n": 34,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.0
+    },
+    "Fictional": {
+      "n": 36,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.0
+    },
+    "Original": {
+      "n": 54,
+      "accuracy": 0.6481481481481481,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.0
+    },
+    "Question modified": {
+      "n": 13,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.0
+    }
+  },
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "base_model": "Qwen/Qwen2.5-7B-Instruct",
+  "adapter_dir": "REDACTED_ABS_PATH/adapter",
+  "adapter_type": "dense",
+  "manifest": "REDACTED_ABS_PATH/metamedqa_eval_seed42.json",
+  "subset": "eval",
+  "prompt_style": "metamedqa_full",
+  "phase1_faithfulness": {
+    "note": "No Phase 1 JSONL mapped for this model."
+  }
+}

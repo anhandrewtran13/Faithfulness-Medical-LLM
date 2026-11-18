@@ -1,0 +1,22 @@
+{
+  "n_items": 200,
+  "accuracy": 0.315,
+  "ear": {
+    "EAR_25": 0.73,
+    "EAR_50": 0.85,
+    "EAR_75": 0.895,
+    "EAR_90": 0.925
+  },
+  "ear_empty": {
+    "empty@25": 0.06,
+    "empty@50": 0.04,
+    "empty@75": 0.05,
+    "empty@90": 0.03
+  },
+  "bifr": 0.20634920634920634,
+  "bifr_n": 63,
+  "bifr_hits": 13,
+  "model": "openai:o3-mini",
+  "provider": "openai",
+  "manifest": "REDACTED_ABS_PATH/medxpertqa_reasoning_n200_seed42.json"
+}

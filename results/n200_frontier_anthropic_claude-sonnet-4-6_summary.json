@@ -1,0 +1,22 @@
+{
+  "n_items": 200,
+  "accuracy": 0.455,
+  "ear": {
+    "EAR_25": 0.69,
+    "EAR_50": 0.81,
+    "EAR_75": 0.87,
+    "EAR_90": 0.88
+  },
+  "ear_empty": {
+    "empty@25": 0.015,
+    "empty@50": 0.015,
+    "empty@75": 0.01,
+    "empty@90": 0.01
+  },
+  "bifr": 0.32967032967032966,
+  "bifr_n": 91,
+  "bifr_hits": 30,
+  "model": "anthropic:claude-sonnet-4-6",
+  "provider": "anthropic",
+  "manifest": "REDACTED_ABS_PATH/medxpertqa_reasoning_n200_seed42.json"
+}

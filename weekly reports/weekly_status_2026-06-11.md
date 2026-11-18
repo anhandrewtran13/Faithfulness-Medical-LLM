@@ -22,7 +22,7 @@
 
 ### Main experiment — N=200 × 3 models (MedXpertQA Text Reasoning, seed=42)
 
-All runs used `eval_faithfulness.py` on the RIT `batch-gpu` partition (NVIDIA A40). **Canonical results below are from the parsing-fixed re-runs** (`results/n200_*_fixed.jsonl` and `results/n200_*_fixed_summary.txt`). Original runs retained as `results/n200_*` (no `_fixed` suffix) for before/after comparison.
+All runs used `eval_faithfulness.py` on the RIT `batch-gpu` partition. **Canonical results below are from the parsing-fixed re-runs** (`results/n200_*_fixed.jsonl` and `results/n200_*_fixed_summary.txt`). Original runs retained as `results/n200_*` (no `_fixed` suffix) for before/after comparison.
 
 | Model | Accuracy | EAR₂₅ / EAR₅₀ / EAR₇₅ / EAR₉₀ | BIFR | empty@25% |
 |---|---|---|---|---|

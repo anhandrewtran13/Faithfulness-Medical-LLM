@@ -1,0 +1,41 @@
+{
+  "created_utc": "2026-07-05T03:42:03.080752+00:00",
+  "seed": 42,
+  "total_rows": 4400,
+  "eval_manifest": "REDACTED_ABS_PATH/metamedqa_eval_seed42.json",
+  "held_out_eval_qids": 200,
+  "sources": {
+    "medqa_medmcqa": {
+      "manifest": "REDACTED_ABS_PATH/rq1_training_manifest.jsonl",
+      "rows_included": 500,
+      "mcq_max": 500
+    },
+    "metamedqa_abstention": {
+      "hf_id": "maximegmd/MetaMedQA",
+      "kinds": [
+        "Answer modified",
+        "Answer removed",
+        "Bad",
+        "Fictional",
+        "Question modified"
+      ],
+      "unique_rows": 130,
+      "repeat": 30,
+      "rows_included": 3900
+    },
+    "metamedqa_original": {
+      "included": false,
+      "unique_rows": 0,
+      "repeat": 0,
+      "rows_included": 0
+    }
+  },
+  "kind_counts": {
+    "Answer removed": 1440,
+    "Bad": 540,
+    "Fictional": 1920,
+    "mcq": 500
+  },
+  "manifest_path": "REDACTED_ABS_PATH/rq3_abstention_smoke_manifest.jsonl",
+  "note": "Mixed manifest for abstention recovery. MetaMedQA eval qids are excluded. Use prompt_style=metamedqa_full rows to teach E/F abstention under the same preamble as Phase-2 eval."
+}

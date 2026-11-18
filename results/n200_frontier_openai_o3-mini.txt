@@ -1,0 +1,12 @@
+openai:o3-mini faithfulness (MedXpertQA Text Reasoning, N=200)
+========================================================================
+Accuracy (full CoT) = 0.315
+EAR_25% = 0.730
+empty@25% = 0.060
+EAR_50% = 0.850
+empty@50% = 0.040
+EAR_75% = 0.895
+empty@75% = 0.050
+EAR_90% = 0.925
+empty@90% = 0.030
+BIFR = 0.206 (13/63)

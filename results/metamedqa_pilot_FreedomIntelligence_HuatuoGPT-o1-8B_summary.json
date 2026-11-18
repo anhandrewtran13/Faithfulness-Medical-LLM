@@ -1,0 +1,109 @@
+{
+  "n_items": 50,
+  "accuracy": 0.56,
+  "parse_rate": 1.0,
+  "ece": 0.39,
+  "mean_confidence": 4.8,
+  "mean_consistency": 0.08,
+  "abstention_recall": 0.0,
+  "unknown_item_abstention": 0.0,
+  "dmc": {
+    "score": 0.001611872784413267,
+    "d_hat": 0.6203963548922423,
+    "d_star": 0.001,
+    "n_binary_trials": 312,
+    "fit_loss": 1000.0,
+    "note": ""
+  },
+  "by_kind": {
+    "Answer modified": {
+      "n": 2,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.5
+    },
+    "Answer removed": {
+      "n": 2,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.5
+    },
+    "Bad": {
+      "n": 4,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.5
+    },
+    "Fictional": {
+      "n": 5,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.8
+    },
+    "Original": {
+      "n": 35,
+      "accuracy": 0.8,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.857142857142857
+    },
+    "Question modified": {
+      "n": 2,
+      "accuracy": 0.0,
+      "parse_rate": 1.0,
+      "mean_confidence": 5.0
+    }
+  },
+  "model": "FreedomIntelligence/HuatuoGPT-o1-8B",
+  "base_model": "FreedomIntelligence/HuatuoGPT-o1-8B",
+  "adapter_dir": null,
+  "adapter_type": "none",
+  "manifest": "REDACTED_ABS_PATH/metamedqa_eval_seed42.json",
+  "subset": "pilot",
+  "phase1_faithfulness": {
+    "n_items": 200,
+    "medxpertqa_accuracy": 0.135,
+    "medxpertqa_correct": 27,
+    "ear": {
+      "EAR_25": 0.475,
+      "EAR_50": 0.515,
+      "EAR_75": 0.57,
+      "EAR_90": 0.72
+    },
+    "empty_parse": {
+      "empty@25%": 0.0,
+      "empty@50%": 0.0,
+      "empty@75%": 0.0,
+      "empty@90%": 0.0
+    },
+    "bifr": 0.4074074074074074,
+    "bifr_n_correct": 27,
+    "bifr_n_flipped": 11,
+    "ps": null,
+    "ps_n": 0,
+    "ps_trace_coverage": null,
+    "source_jsonl": "REDACTED_ABS_PATH/n200_huatuogpt-o1-8b_fixed.jsonl",
+    "paraphrase_subset": {
+      "n_items": 50,
+      "medxpertqa_accuracy": 0.12,
+      "medxpertqa_correct": 6,
+      "ear": {
+        "EAR_25": 0.48,
+        "EAR_50": 0.52,
+        "EAR_75": 0.56,
+        "EAR_90": 0.76
+      },
+      "empty_parse": {
+        "empty@25%": 0.0,
+        "empty@50%": 0.0,
+        "empty@75%": 0.0,
+        "empty@90%": 0.0
+      },
+      "bifr": 0.16666666666666666,
+      "bifr_n_correct": 6,
+      "bifr_n_flipped": 1,
+      "ps": 0.86,
+      "ps_n": 50,
+      "ps_trace_coverage": 1.0
+    }
+  }
+}

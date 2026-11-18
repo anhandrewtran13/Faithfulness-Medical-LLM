@@ -1,0 +1,12 @@
+openai:gpt-4o faithfulness (MedXpertQA Text Reasoning, N=200)
+========================================================================
+Accuracy (full CoT) = 0.270
+EAR_25% = 0.630
+empty@25% = 0.000
+EAR_50% = 0.735
+empty@50% = 0.000
+EAR_75% = 0.780
+empty@75% = 0.000
+EAR_90% = 0.890
+empty@90% = 0.000
+BIFR = 0.370 (20/54)

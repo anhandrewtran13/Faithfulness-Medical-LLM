@@ -1,0 +1,114 @@
+{
+  "n_items": 200,
+  "accuracy": 0.325,
+  "parse_rate": 1.0,
+  "ece": 0.26,
+  "mean_confidence": 3.34,
+  "mean_consistency": 0.9266666666666663,
+  "abstention_recall": 0.5273972602739726,
+  "unknown_item_abstention": 0.40963855421686746,
+  "idk_recall": 0.4125,
+  "missing_answer_recall": 0.19696969696969696,
+  "idk_recall_n": 80,
+  "missing_recall_n": 66,
+  "dmc": {
+    "score": 0.0014308704641144972,
+    "d_hat": 0.6988752826195599,
+    "d_star": 0.001,
+    "n_binary_trials": 725,
+    "fit_loss": 1000.0,
+    "note": ""
+  },
+  "by_kind": {
+    "Answer modified": {
+      "n": 27,
+      "accuracy": 0.25925925925925924,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.3703703703703702
+    },
+    "Answer removed": {
+      "n": 36,
+      "accuracy": 0.16666666666666666,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.2222222222222223
+    },
+    "Bad": {
+      "n": 34,
+      "accuracy": 0.29411764705882354,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.3529411764705883
+    },
+    "Fictional": {
+      "n": 36,
+      "accuracy": 0.5833333333333334,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.5555555555555554
+    },
+    "Original": {
+      "n": 54,
+      "accuracy": 0.35185185185185186,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.2962962962962963
+    },
+    "Question modified": {
+      "n": 13,
+      "accuracy": 0.15384615384615385,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.1538461538461537
+    }
+  },
+  "model": "UCSC-VLAA/m1-7B-23K",
+  "base_model": "UCSC-VLAA/m1-7B-23K",
+  "adapter_dir": null,
+  "adapter_type": "none",
+  "manifest": "REDACTED_ABS_PATH/metamedqa_eval_seed42.json",
+  "subset": "eval",
+  "prompt_style": "metamedqa_full",
+  "phase1_faithfulness": {
+    "n_items": 200,
+    "medxpertqa_accuracy": 0.105,
+    "medxpertqa_correct": 21,
+    "ear": {
+      "EAR_25": 0.22,
+      "EAR_50": 0.315,
+      "EAR_75": 0.39,
+      "EAR_90": 0.41
+    },
+    "empty_parse": {
+      "empty@25%": 0.0,
+      "empty@50%": 0.0,
+      "empty@75%": 0.0,
+      "empty@90%": 0.0
+    },
+    "bifr": 0.8095238095238095,
+    "bifr_n_correct": 21,
+    "bifr_n_flipped": 17,
+    "ps": null,
+    "ps_n": 0,
+    "ps_trace_coverage": null,
+    "source_jsonl": "REDACTED_ABS_PATH/n200_m1-7b-23k_fixed.jsonl",
+    "paraphrase_subset": {
+      "n_items": 50,
+      "medxpertqa_accuracy": 0.16,
+      "medxpertqa_correct": 8,
+      "ear": {
+        "EAR_25": 0.24,
+        "EAR_50": 0.3,
+        "EAR_75": 0.46,
+        "EAR_90": 0.46
+      },
+      "empty_parse": {
+        "empty@25%": 0.0,
+        "empty@50%": 0.0,
+        "empty@75%": 0.0,
+        "empty@90%": 0.0
+      },
+      "bifr": 0.75,
+      "bifr_n_correct": 8,
+      "bifr_n_flipped": 6,
+      "ps": 0.44,
+      "ps_n": 50,
+      "ps_trace_coverage": 1.0
+    }
+  }
+}

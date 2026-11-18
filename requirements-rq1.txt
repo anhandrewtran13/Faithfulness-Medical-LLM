@@ -1,0 +1,6 @@
+# Phase 2 (RQ1/RQ2) — extends requirements.txt
+-r requirements.txt
+
+# RQ1 training uses the same stack; listed explicitly for reproducibility.
+peft>=0.11
+scipy>=1.10

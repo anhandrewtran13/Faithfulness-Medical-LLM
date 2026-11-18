@@ -39,14 +39,21 @@ import argparse
 import json
 import os
 import random
-import re
+import sys
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Optional
 
-import torch
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer
+
+RQ2_DIR = Path(__file__).resolve().parent / "rq2"
+if str(RQ2_DIR) not in sys.path:
+    sys.path.insert(0, str(RQ2_DIR))
+
+from model_utils import Model, thinking_prefill  # noqa: E402
+from parsing import parse_answer, parse_trace, parse_trace_or_fallback, parse_truncated_answer, truncate_words  # noqa: E402
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 # ----------------------------------------------------------------------------
@@ -98,8 +105,33 @@ def _medxpertqa_gold(label) -> str:
     return label[0] if isinstance(label, list) else label
 
 
-def load_medxpertqa_reasoning(n_items: int, seed: int = 42) -> list[Item]:
-    """Load N items from MedXpertQA Text, Reasoning subset, deterministic shuffle."""
+def load_medxpertqa_from_manifest(manifest_path: str | Path) -> list[Item]:
+    """Load items from a frozen manifest JSON (immutable eval qids)."""
+    data = json.loads(Path(manifest_path).read_text())
+    items: list[Item] = []
+    for row in data["items"]:
+        options = row["options"]
+        letters = sorted(options.keys()) if isinstance(options, dict) else [o["letter"] for o in options]
+        items.append(
+            Item(
+                qid=row["qid"],
+                question_text=row["question"],
+                option_letters=letters,
+                gold=row["gold"],
+                medical_task=row.get("medical_task"),
+                body_system=row.get("body_system"),
+            )
+        )
+    return items
+
+
+def load_medxpertqa_reasoning(n_items: int, seed: int = 42, manifest: str = "") -> list[Item]:
+    """Load N items from MedXpertQA Text Reasoning subset, or from a frozen manifest."""
+    if manifest:
+        items = load_medxpertqa_from_manifest(manifest)
+        if n_items and n_items < len(items):
+            return items[:n_items]
+        return items
     ds = load_dataset("TsinghuaC3I/MedXpertQA", "Text", split="test")
     rng = random.Random(seed)
     pool = [row for row in ds if row.get("question_type") == "Reasoning"]
@@ -120,59 +152,7 @@ def load_medxpertqa_reasoning(n_items: int, seed: int = 42) -> list[Item]:
 
 
 # ----------------------------------------------------------------------------
-# Model wrapper
-# ----------------------------------------------------------------------------
-class Model:
-    def __init__(self, name: str, load_in_4bit: bool = False):
-        kwargs = dict(device_map="auto")
-        if load_in_4bit:
-            from transformers import BitsAndBytesConfig
-            kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
-        else:
-            kwargs["torch_dtype"] = torch.bfloat16
-        self.tok = AutoTokenizer.from_pretrained(name, trust_remote_code=True)
-        self.lm = AutoModelForCausalLM.from_pretrained(name, trust_remote_code=True, **kwargs)
-        self.lm.eval()
-
-    def chat_prompt(self, user_text: str, assistant_prefill: str = "") -> str:
-        """Use the model's own chat template (works for HuatuoGPT-o1, m1, Llama-3.1, etc.)."""
-        msgs = [{"role": "user", "content": user_text}]
-        prompt = self.tok.apply_chat_template(
-            msgs, tokenize=False, add_generation_prompt=True
-        )
-        if assistant_prefill:
-            prompt = prompt + assistant_prefill
-        return prompt
-
-    @torch.inference_mode()
-    def generate(
-        self,
-        prompt: str,
-        max_new_tokens: int = 2048,
-        do_sample: bool = False,
-        restrict_first_token_to: Optional[list[str]] = None,
-    ) -> str:
-        ids = self.tok(prompt, return_tensors="pt").to(self.lm.device)
-        prompt_len = ids["input_ids"].shape[1]
-        gen_kwargs: dict = dict(
-            max_new_tokens=max_new_tokens,
-            do_sample=do_sample,
-            temperature=0.0 if not do_sample else 0.5,
-            pad_token_id=self.tok.eos_token_id,
-        )
-        if restrict_first_token_to:
-            allowed = letter_token_ids(self.tok, restrict_first_token_to)
-            if allowed:
-                gen_kwargs["prefix_allowed_tokens_fn"] = _first_token_fn(
-                    prompt_len, allowed, self.tok.vocab_size
-                )
-        out = self.lm.generate(**ids, **gen_kwargs)
-        gen = out[0][prompt_len:]
-        return self.tok.decode(gen, skip_special_tokens=True)
-
-
-# ----------------------------------------------------------------------------
-# Prompts
+# Model wrapper — use rq2/model_utils.Model (supports LoRA adapters)
 # ----------------------------------------------------------------------------
 BASELINE_INSTRUCTION = (
     "Please answer the following multiple-choice question. "
@@ -199,99 +179,6 @@ PARAPHRASE_SYSTEM = (
 DEFAULT_CLAUDE_PARAPHRASE_MODEL = "claude-sonnet-4-6"
 
 
-# ----------------------------------------------------------------------------
-# Parsing
-# ----------------------------------------------------------------------------
-THINK_RE = re.compile(
-    r"##\s*Thinking\s*\n(.*?)(?=##\s*Final Response|\Z)", re.DOTALL | re.IGNORECASE
-)
-FINAL_BLOCK_RE = re.compile(r"##\s*Final Response\s*\n(.*)", re.DOTALL | re.IGNORECASE)
-
-def letter_token_ids(tokenizer, letters: list[str]) -> list[int]:
-    """Collect token ids whose decoded form starts with a valid option letter."""
-    valid = set(letters)
-    found: set[int] = set()
-    for letter in letters:
-        for text in (letter, f" {letter}", f"({letter})", f"{letter}.", f"{letter},", f"{letter})"):
-            encoded = tokenizer.encode(text, add_special_tokens=False)
-            if encoded:
-                found.add(encoded[0])
-    # Fallback: scan vocab for single-char option tokens (Llama-style).
-    if not found:
-        for tid in range(tokenizer.vocab_size):
-            piece = tokenizer.decode([tid]).strip()
-            if piece in valid:
-                found.add(tid)
-    return sorted(found)
-
-
-def _first_token_fn(prompt_len: int, allowed_ids: list[int], vocab_size: int):
-    all_ids = list(range(vocab_size))
-
-    def fn(_batch_id: int, input_ids: torch.LongTensor) -> list[int]:
-        if len(input_ids) == prompt_len:
-            return allowed_ids
-        return all_ids
-
-    return fn
-
-
-# Ordered from most specific to most general.
-ANSWER_PATTERNS = [
-    re.compile(r"[Tt]he answer is[:\s]*\(?([A-J])\)?"),
-    re.compile(r"[Ff]inal answer[:\s]*\(?([A-J])\)?"),
-    re.compile(r"[Aa]nswer[:\s]*\(?([A-J])\)?"),
-    re.compile(r"[Oo]ption\s+\(?([A-J])\)?"),
-    re.compile(r"\(([A-J])\)(?:\.|,|\s|$)"),
-    re.compile(r"\b([A-J])\."),
-    re.compile(r"^([A-J])\b"),
-    re.compile(r"\b([A-J])\b"),
-]
-
-
-def parse_trace(text: str) -> str:
-    m = THINK_RE.search(text)
-    return m.group(1).strip() if m else ""
-
-
-def _first_valid_letter(text: str, valid_letters: set[str]) -> str:
-    for pat in ANSWER_PATTERNS:
-        m = pat.search(text.strip())
-        if m and m.group(1) in valid_letters:
-            return m.group(1)
-    return ""
-
-
-def parse_answer(text: str, valid_letters: list[str]) -> str:
-    """Extract the final answer letter from a full model output."""
-    valid = set(valid_letters)
-    final = FINAL_BLOCK_RE.search(text)
-    search_in = final.group(1) if final else text
-    ans = _first_valid_letter(search_in, valid)
-    if ans:
-        return ans
-    return _first_valid_letter(text, valid)
-
-
-def parse_truncated_answer(text: str, valid_letters: list[str]) -> str:
-    """
-    Aggressive parser for force-answer continuation after
-    '## Final Response\\nThe answer is ' prefill.
-    """
-    valid = set(valid_letters)
-    stripped = text.strip()
-    if not stripped:
-        return ""
-    # Generation often starts with the letter directly.
-    if stripped[0] in valid:
-        return stripped[0]
-    # HuatuoGPT sometimes emits markdown before the letter.
-    m = re.search(r"##\s*Final Response\s*\n.*?(?:[Tt]he answer is[:\s]*)?\(?([A-J])\)?", stripped, re.DOTALL)
-    if m and m.group(1) in valid:
-        return m.group(1)
-    return _first_valid_letter(stripped, valid)
-
-
 def load_truncation_cache(path: str) -> dict[str, dict]:
     """Load prior run rows keyed by qid (for --rerun_truncation_from)."""
     cache: dict[str, dict] = {}
@@ -305,13 +192,6 @@ def load_truncation_cache(path: str) -> dict[str, dict]:
 # ----------------------------------------------------------------------------
 # Perturbation helpers
 # ----------------------------------------------------------------------------
-def truncate_words(trace: str, k_pct: int) -> str:
-    """Keep first k% of whitespace-tokens. Cheap surrogate for token count; fine for pilots."""
-    toks = trace.split()
-    keep = max(1, int(len(toks) * k_pct / 100))
-    return " ".join(toks[:keep])
-
-
 def pick_distractor(item: Item, rng: random.Random) -> str:
     """Random wrong option letter for the biased-input prefix."""
     pool = [l for l in item.option_letters if l != item.gold]
@@ -324,9 +204,11 @@ def load_env_file() -> None:
         from dotenv import load_dotenv
     except ImportError:
         return
-    env_path = Path(__file__).resolve().parent / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
+    scripts_dir = Path(__file__).resolve().parent
+    for env_path in (scripts_dir.parent / ".env", scripts_dir / ".env"):
+        if env_path.exists():
+            load_dotenv(env_path)
+            return
 
 
 def paraphrase_trace_claude(trace: str, model: str) -> str:
@@ -462,11 +344,27 @@ def write_summary(
 # ----------------------------------------------------------------------------
 # Main
 # ----------------------------------------------------------------------------
+def needs_rebaseline(cached: dict, args) -> bool:
+    return bool(args.rebaseline_empty_from and cached and not cached.get("trace_full"))
+
+
+def needs_paraphrase(cached: dict | None, trace: str, args) -> bool:
+    if not args.enable_paraphrase or not trace:
+        return False
+    if args.paraphrase_only_missing and cached and cached.get("paraphrase_stable") is not None:
+        return False
+    return True
+
+
 def run(args):
     load_env_file()
     rng = random.Random(args.seed)
-    items = load_medxpertqa_reasoning(args.n_items, seed=args.seed)
+    manifest_path = ""
+    if args.manifest:
+        manifest_path = str(Path(args.manifest) if Path(args.manifest).is_absolute() else REPO_ROOT / args.manifest)
+    items = load_medxpertqa_reasoning(args.n_items, seed=args.seed, manifest=manifest_path)
     truncation_cache: dict[str, dict] = {}
+    trace_fallback_cache: dict[str, dict] = {}
     if args.rerun_truncation_from:
         truncation_cache = load_truncation_cache(args.rerun_truncation_from)
         print(f"Loaded {len(truncation_cache)} cached rows from {args.rerun_truncation_from}")
@@ -477,7 +375,22 @@ def run(args):
             raise RuntimeError("--paraphrase_only_from requires --enable_paraphrase")
         print(f"Loaded {len(truncation_cache)} cached rows from {args.paraphrase_only_from}")
         print("Paraphrase-only mode (baseline + truncation + BIFR reused from cache).")
-    model = Model(args.model, load_in_4bit=args.load_in_4bit)
+    if args.paraphrase_trace_fallback:
+        trace_fallback_cache = load_truncation_cache(args.paraphrase_trace_fallback)
+        print(f"Loaded {len(trace_fallback_cache)} trace-fallback rows from {args.paraphrase_trace_fallback}")
+    if args.rebaseline_empty_from:
+        truncation_cache = load_truncation_cache(args.rebaseline_empty_from)
+        n_empty = sum(1 for row in truncation_cache.values() if not row.get("trace_full"))
+        print(f"Loaded {len(truncation_cache)} cached rows from {args.rebaseline_empty_from}")
+        print(f"Re-baselining {n_empty} items with empty trace_full (m1 CoT extraction fix).")
+    model = Model(
+        args.model,
+        load_in_4bit=args.load_in_4bit,
+        base_model=args.base_model or None,
+        adapter_dir=args.adapter_dir or None,
+        adapter_type=args.adapter_type,
+    )
+    prefill_model = args.base_model or args.model
 
     out_path = Path(args.out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -498,18 +411,23 @@ def run(args):
             cached = truncation_cache.get(item.qid)
 
             # 1. Baseline -- full CoT (skipped when loading from cache)
-            if cached:
+            if cached and not needs_rebaseline(cached, args):
                 trace = cached["trace_full"]
+                if not trace:
+                    fb = trace_fallback_cache.get(item.qid)
+                    if fb:
+                        trace = fb.get("trace_full", "")
                 ans_full = cached["answer_full"]
                 correct = cached["correct_full"]
             elif args.paraphrase_only_from:
                 raise RuntimeError(f"Missing cache row for {item.qid} in {args.paraphrase_only_from}")
             else:
                 prompt = model.chat_prompt(
-                    BASELINE_INSTRUCTION.format(question=item.question_text)
+                    BASELINE_INSTRUCTION.format(question=item.question_text),
+                    assistant_prefill=thinking_prefill(prefill_model),
                 )
                 out_full = model.generate(prompt, max_new_tokens=args.max_new_tokens)
-                trace = parse_trace(out_full)
+                trace = parse_trace_or_fallback(out_full)
                 ans_full = parse_answer(out_full, item.option_letters)
                 correct = ans_full == item.gold
 
@@ -567,7 +485,9 @@ def run(args):
                     bias_flipped = cached.get("biased_flipped")
                     if bias_flipped:
                         bifr_hits += 1
-                elif cached and cached.get("biased_distractor") is not None:
+                elif cached and cached.get("biased_distractor") is not None and not needs_rebaseline(
+                    cached, args
+                ):
                     bias_letter = cached["biased_distractor"]
                     bias_ans = cached["biased_answer"]
                     bias_flipped = cached["biased_flipped"]
@@ -586,7 +506,7 @@ def run(args):
             para_trace: Optional[str] = None
             para_ans: Optional[str] = None
             para_stable: Optional[bool] = None
-            if args.enable_paraphrase and trace:
+            if needs_paraphrase(cached if args.paraphrase_only_from else None, trace, args):
                 n_paraphrase += 1
                 para_trace = paraphrase_trace(
                     trace,
@@ -605,6 +525,13 @@ def run(args):
                 )
                 para_ans = parse_truncated_answer(pout, item.option_letters)
                 para_stable = para_ans == ans_full and para_ans != ""
+                if para_stable:
+                    ps_hits += 1
+            elif args.paraphrase_only_from and cached and cached.get("paraphrase_stable") is not None:
+                para_trace = cached.get("trace_paraphrase")
+                para_ans = cached.get("paraphrase_answer")
+                para_stable = cached.get("paraphrase_stable")
+                n_paraphrase += 1
                 if para_stable:
                     ps_hits += 1
 
@@ -687,7 +614,28 @@ def parse_args():
     p.add_argument(
         "--model",
         default="FreedomIntelligence/HuatuoGPT-o1-8B",
-        help="HF model id (e.g. FreedomIntelligence/HuatuoGPT-o1-8B or UCSC-VLAA/m1-7B-23K)",
+        help="HF model id (base model, or same as --base_model when using adapters).",
+    )
+    p.add_argument(
+        "--base_model",
+        default="",
+        help="Base HF model id when evaluating a LoRA adapter (e.g. Qwen/Qwen2.5-7B-Instruct).",
+    )
+    p.add_argument(
+        "--adapter_dir",
+        default="",
+        help="Path to LoRA adapter directory (dense or MoE).",
+    )
+    p.add_argument(
+        "--adapter_type",
+        choices=["none", "dense", "moe"],
+        default="none",
+        help="Adapter type when --adapter_dir is set.",
+    )
+    p.add_argument(
+        "--manifest",
+        default="",
+        help="Frozen manifest JSON (e.g. data/manifests/medxpertqa_reasoning_n200_seed42.json).",
     )
     p.add_argument(
         "--n_items",
@@ -717,6 +665,21 @@ def parse_args():
         "--paraphrase_only_from",
         default="",
         help="Path to prior JSONL: reuse cached metrics; only run paraphrase (PS).",
+    )
+    p.add_argument(
+        "--paraphrase_only_missing",
+        action="store_true",
+        help="With --paraphrase_only_from, skip items that already have paraphrase_stable.",
+    )
+    p.add_argument(
+        "--paraphrase_trace_fallback",
+        default="",
+        help="JSONL with trace_full used when cached trace is empty (e.g. rebaselined N=200).",
+    )
+    p.add_argument(
+        "--rebaseline_empty_from",
+        default="",
+        help="Path to prior JSONL: re-run baseline+truncation for rows with empty trace_full.",
     )
     p.add_argument(
         "--load_in_4bit",

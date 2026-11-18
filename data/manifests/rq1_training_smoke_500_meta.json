@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-06-24T03:04:26.251650+00:00",
+  "seed": 42,
+  "total_rows": 500,
+  "sources": {
+    "medqa_usmle": {
+      "hf_id": "GBaker/MedQA-USMLE-4-options",
+      "split": "train",
+      "rows_included": 100,
+      "max_rows": 100
+    },
+    "medmcqa": {
+      "hf_id": "openlifescienceai/medmcqa",
+      "split": "train",
+      "rows_included": 400,
+      "max_rows": 400,
+      "filter": "choice_type == single and cop in 0..3"
+    }
+  },
+  "manifest_path": "REDACTED_ABS_PATH/rq1_training_smoke_500.jsonl",
+  "note": "All RQ1 adapter variants (dense LoRA, MoE-LoRA) must train on this exact manifest to avoid matched-data confounds."
+}

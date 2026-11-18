@@ -1,0 +1,58 @@
+{
+  "n_items": 200,
+  "accuracy": 0.77,
+  "parse_rate": 0.995,
+  "ece": 0.07035175879396985,
+  "mean_confidence": 4.34,
+  "mean_consistency": 0.9199999999999998,
+  "abstention_recall": 0.7123287671232876,
+  "unknown_item_abstention": 0.6024096385542169,
+  "idk_recall": 0.625,
+  "missing_answer_recall": 0.8181818181818182,
+  "idk_recall_n": 80,
+  "missing_recall_n": 66,
+  "by_kind": {
+    "Answer modified": {
+      "n": 27,
+      "accuracy": 0.8888888888888888,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.185185185185185
+    },
+    "Answer removed": {
+      "n": 36,
+      "accuracy": 0.7777777777777778,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.027777777777778
+    },
+    "Bad": {
+      "n": 34,
+      "accuracy": 0.2647058823529412,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.117647058823529
+    },
+    "Fictional": {
+      "n": 36,
+      "accuracy": 0.9722222222222222,
+      "parse_rate": 0.9722222222222222,
+      "mean_confidence": 4.944444444444445
+    },
+    "Original": {
+      "n": 54,
+      "accuracy": 0.9259259259259259,
+      "parse_rate": 1.0,
+      "mean_confidence": 4.481481481481482
+    },
+    "Question modified": {
+      "n": 13,
+      "accuracy": 0.6153846153846154,
+      "parse_rate": 1.0,
+      "mean_confidence": 3.8461538461538463
+    }
+  },
+  "model": "anthropic:claude-sonnet-4-6",
+  "provider": "anthropic",
+  "api_model": "claude-sonnet-4-6",
+  "manifest": "REDACTED_ABS_PATH/metamedqa_eval_seed42.json",
+  "subset": "eval",
+  "prompt_style": "metamedqa_full"
+}

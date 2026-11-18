@@ -1,5 +1,10 @@
 torch>=2.1
 transformers>=4.45
-datasets>=2.18
+datasets>=4.0.0
 accelerate>=0.30
 bitsandbytes>=0.43   # only required if you pass --load_in_4bit
+scipy>=1.10
+peft>=0.11
+anthropic>=0.40      # paraphrase via Claude (default)
+python-dotenv>=1.0   # load API keys from .env
+openai>=1.0          # only if you pass --paraphrase_provider openai

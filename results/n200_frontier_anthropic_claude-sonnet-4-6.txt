@@ -1,0 +1,12 @@
+anthropic:claude-sonnet-4-6 faithfulness (MedXpertQA Text Reasoning, N=200)
+========================================================================
+Accuracy (full CoT) = 0.455
+EAR_25% = 0.690
+empty@25% = 0.015
+EAR_50% = 0.810
+empty@50% = 0.015
+EAR_75% = 0.870
+empty@75% = 0.010
+EAR_90% = 0.880
+empty@90% = 0.010
+BIFR = 0.330 (30/91)
